@@ -1,4 +1,4 @@
 SoleDB
 ======
 
-Simple table-like flat file database written with object-oriented PHP.
+Simple table-like JSON flat file database written in PHP.
