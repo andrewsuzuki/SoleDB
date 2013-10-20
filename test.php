@@ -7,8 +7,34 @@ new Sole;
 
 Sole::load('users');
 
-var_dump(Sole::get('users', null, null, array('a', 'ASC', 'CI')));
+//Sole::deleteDB('pages');
 
+//Sole::newDB('pages');
+
+//var_dump(Sole::get('users', null, null, array('a', 'ASC', 'CI')));
+
+//Sole::insert('users', array('id'=>10,'phone'=>'555-555-5555','heyy'=>'666 NO ST','username'=>'heyy','password'=>'poooooo'));
+
+//Sole::delete('users', array('id'=>10));
+
+//Sole::setField('users', 'nam!e', 'phone', 'John B');
+
+//Sole::deleteField('users', 'name');
+
+echo '<table>';
+
+foreach(Sole::get('users') as $row)
+{
+    echo '<tr>';
+    // echo '<td>'.$row[''].'</td>';
+    foreach ($row as $cell)
+    {
+        echo '<td>'.$cell.'</td>';
+    }
+    echo '</tr>';
+}
+
+echo '</table>';
 
 /*
 $csv = 'one,"t,wo",three';

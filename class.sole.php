@@ -38,23 +38,46 @@ class Sole {
 
     public static function load($db)
     {
-        $name = $db;
-
-        if (!($file = @file_get_contents(Sole::$options['dir'].$name.'.json')))
+        if (!($file = @file_get_contents(Sole::$options['dir'].$db.'.json')))
         {
             Sole::error('DB_DNE');
         }
 
-        if (!($db = @json_decode($file, true)) || !isset($db['head']) || !is_array($db['head']) || !isset($db['body']) || !is_array($db['body']))
+        if (!($database = @json_decode($file, true)) || !isset($database['head']) || !is_array($database['head']) || !isset($database['body']) || !is_array($database['body']))
         {
             Sole::error('DB_COR');
         }
 
-        Sole::$databases[$name] = $db;
+        Sole::$databases[$db] = $database;
+    }
+
+    private static function save($db)
+    {
+        Sole::in($db);
+
+        @file_put_contents(Sole::$options['dir'].$db.'.json', @json_encode(Sole::$databases[$db]));
+    }
+
+    public static function in($db, $bool = false)
+    {
+        if (isset(Sole::$databases[$db]))
+        {
+            return true;
+        }
+        elseif ($bool == true)
+        {
+            return false;
+        }
+        else
+        {
+            Sole::error('DB_DNE');
+        }
     }
 
     public static function get($db, $select = null, $where = null, $order = null)
     {
+        Sole::in($db);
+
         $data = Sole::$databases[$db];
         $head = $data['head'];
         $data = Sole::toAssoc($data);
@@ -139,14 +162,168 @@ class Sole {
         return $data;
     }
 
-    public static function setField($field)
+    public static function newDB($db)
     {
+        if (!is_string($db) || trim($db) == '' || !ctype_alnum(str_replace(array('_', '-'), '', $db)) || isset(Sole::$databases[$db]) || is_file(Sole::$options['dir'].$db.'.json'))
+        {
+            Sole::error('NAME_INVALID');
+        }
 
+        Sole::$databases[$db] = array('head'=>array(), 'body'=>array());
+
+        Sole::save($db);
     }
 
-    public static function deleteField($field)
+    public static function deleteDB($db)
     {
+        if (!is_file(Sole::$options['dir'].$db.'.json'))
+        {
+            Sole::error('DB_DNE');
+        }
 
+        if (isset(Sole::$databases[$db]))
+        {
+            unset(Sole::$databases[$db]);
+        }
+
+        unlink(Sole::$options['dir'].$db.'.json');
+    }
+
+    public static function insertField($db, $field, $position = null, $default = '')
+    {
+        Sole::in($db);
+
+        $database = Sole::$databases[$db];
+
+        if (!is_string($field) || in_array($field, $database['head']) || trim($field) == '' || !ctype_alnum(str_replace(array('_', '-'), '', $field)))
+        {
+            Sole::error('NAME_INVALID');
+        }
+
+        if (strtolower($position) == '[beginning]')
+        {
+            $target_pos = 0;
+        }
+        elseif (strtolower($position) == '[end]' || !is_string($position) || !in_array($position, $database['head'])) // if position is at end, position isn't given, or "after" field doesn't exist
+        {
+            $target_pos = count($database['body']);
+        }
+        else // if "after" field is given and exists
+        {
+            $target_pos = array_search($position, $database['head']) + 1;
+        }
+
+        array_splice($database['head'], $target_pos, 0, $field); // insert new field in head
+
+        foreach($database['body'] as $n => $row)
+        {
+            array_splice($database['body'][$n], $target_pos, 0, $default); // insert new cell in row
+        }
+
+        Sole::$databases[$db] = $database;
+
+        Sole::save($db);
+    }
+
+    public static function deleteField($db, $field)
+    {
+        Sole::in($db);
+
+        $database = Sole::$databases[$db];
+
+        if (!in_array($field, $database['head']))
+        {
+            Sole::error('FIELD_DNE');
+        }
+
+        $target_pos = array_search($field, $database['head']);
+
+        array_splice($database['head'], $target_pos, 1); // delete field in head
+
+        foreach($database['body'] as $n => $row)
+        {
+            array_splice($database['body'][$n], $target_pos, 1); // delete cell in row
+        }
+
+        Sole::$databases[$db] = $database;
+
+        Sole::save($db);
+    }
+
+    public static function insert($db, $data = array())
+    {
+        Sole::in($db);
+
+        $database = Sole::$databases[$db];
+
+        $row = array();
+
+        foreach($database['head'] as $field)
+        {
+            if (array_key_exists($field, $data))
+            {
+                $row[] = $data[$field];
+            }
+            else
+            {
+                $row[] = '';
+            }
+        }
+
+        $database['body'][] = $row;
+
+        Sole::$databases[$db] = $database;
+
+        Sole::save($db);
+    }
+
+    public static function delete($db, $where = array())
+    {
+        Sole::in($db);
+
+        if (!is_array($where))
+        {
+            return; // Error here?
+        }
+
+        $database = Sole::$databases[$db];
+
+        $target_fields = array();
+
+        $n = 0;
+
+        foreach($database['head'] as $field)
+        {
+            if (array_key_exists($field, $where))
+            {
+                $target_fields[] = array($n, $where[$field]);
+            }
+
+            $n++;
+        }
+
+        foreach($database['body'] as $n => $row)
+        {
+            $is_target = true;
+
+            foreach($target_fields as $target)
+            {
+                if ($row[$target[0]] !== $target[1])
+                {
+                    $is_target = false;
+                    break;
+                }
+            }
+
+            if ($is_target)
+            {
+                unset($database['body'][$n]);
+            }
+        }
+
+        Sole::$databases[$db] = $database;
+
+        Sole::save($db);
     }
 
     private static function toAssoc($data)
@@ -199,15 +376,34 @@ class Sole {
         switch($error)
         {
             case 'DB_DNE':
-                $error = 'Database does not exist.';
+                $error = 'Database does not exist';
                 break;
 
             case 'DB_COR':
-                $error = 'Database is corrupted.';
+                $error = 'Database is corrupted';
+                break;
+
+            case 'FIELD_DNE':
+                $error = 'Field does not exist';
+                break;
+
+            case 'NAME_INVALID':
+                $error = 'New field/database name must be unique, be non-empty, and contain only alphanumeric characters, underscores, and hyphens';
                 break;
 
             default:
-                $error = 'An unknown error occurred.';
+                $error = 'An unknown error occurred';
+        }
+
+        $debug = debug_backtrace();
+
+        if (count($debug) > 1 && ($debug_end = end($debug)) && isset($debug_end['line']))
+        {
+            $error = $error.' (line '.$debug_end['line'].').';
+        }
+        else
+        {
+            $error = $error.'.';
         }
 
         trigger_error($error, E_USER_ERROR);
