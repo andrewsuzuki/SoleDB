@@ -15,6 +15,8 @@ Sole::load('users');
 
 //Sole::insert('users', array('id'=>10,'phone'=>'555-555-5555','heyy'=>'666 NO ST','username'=>'heyy','password'=>'poooooo'));
 
+Sole::update('users', array('password'=>'passwordhehe', 'address'=>'444 Cott St'), array('password'=>'passwordhehe'));
+
 //Sole::delete('users', array('id'=>10));
 
 //Sole::setField('users', 'nam!e', 'phone', 'John B');

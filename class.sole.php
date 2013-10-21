@@ -277,6 +277,79 @@ class Sole {
         Sole::save($db);
     }
 
+    public static function update($db, $data = array(), $where = array())
+    {
+        Sole::in($db);
+
+        if (!is_array($data))
+        {
+            return;
+        }
+
+        $database = Sole::$databases[$db];
+
+        $where_target_fields = array();
+
+        $n = 0;
+
+        foreach($database['head'] as $field)
+        {
+            if (array_key_exists($field, $where))
+            {
+                $where_target_fields[] = array($n, $where[$field]);
+            }
+
+            $n++;
+        }
+
+        // if any where field does not exist in database, end method exec (bc no fields will be targeted for update)
+
+        if (count($where_target_fields) != count($where))
+        {
+            return;
+        }
+
+        $data_target_fields = array();
+
+        $n = 0;
+
+        foreach($database['head'] as $field)
+        {
+            if (array_key_exists($field, $data))
+            {
+                $data_target_fields[] = array($n, $data[$field]);
+            }
+
+            $n++;
+        }
+
+        foreach($database['body'] as $n => $row)
+        {
+            $is_target = true;
+
+            foreach($where_target_fields as $target)
+            {
+                if ($row[$target[0]] !== $target[1])
+                {
+                    $is_target = false;
+                    break;
+                }
+            }
+
+            if ($is_target)
+            {
+                foreach($data_target_fields as $target)
+                {
+                    $database['body'][$n][$target[0]] = $target[1];
+                }
+            }
+        }
+
+        Sole::$databases[$db] = $database;
+
+        Sole::save($db);
+    }
+
     public static function delete($db, $where = array())
     {
         Sole::in($db);
