@@ -1,4 +1,4 @@
-SoleDB v2 By Snaddyvitch-Dispenser
+SoleDB
 ======
 
 SoleDB is a simple flat-file database system written in PHP. It was written to mimic typical SQL queries, but with a more structured syntax. Data is stored in JSON files, which are simple and take up little space (compared to typical XML database systems).
