@@ -36,7 +36,7 @@ Run queries ('users' is an example database name):
 
 **Delete Database** `Sole::deleteDB($db)`
 
-**New Field (Column)** `Sole::newField($db, $field, $position = null, $default = '')`
+**New Field (Column)** `Sole::insertField($db, $field, $position = null, $default = '')`
 
 * $field is new field name
 * $position (optional) is position of new field/column in database. Can be [beginning] for the first position, [end] for the last position, or the name of any existing field for it to be inserted after. If omitted, null, or supplied field does not exist, field will be inserted at end.
